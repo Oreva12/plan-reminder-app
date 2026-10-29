@@ -8,8 +8,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// TODO Slice 3+: mount /api routes
-// app.use('/api', require('./routes'));
+app.use('/api', require('./routes'));
 
 // TODO Slice 3+: error handler LAST
 // app.use(require('./middleware/errorHandler'));
