@@ -1,7 +1,9 @@
 const express = require('express');
 
 const app = express();
+const cors = require('cors');  
 
+app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
@@ -9,8 +11,6 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api', require('./routes'));
-
-// TODO Slice 3+: error handler LAST
-// app.use(require('./middleware/errorHandler'));
+app.use(require('./middleware/errorHandler'));
 
 module.exports = app;

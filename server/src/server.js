@@ -1,6 +1,7 @@
 const env = require('./config/env');
 const { connectDB, disconnectDB } = require('./config/db');
 const app = require('./app');
+const { startDailyReminder } = require('./jobs/dailyReminder');
 
 async function start() {
   await connectDB();
@@ -11,8 +12,7 @@ async function start() {
     console.log(`   Env:    ${env.NODE_ENV} | TZ: ${env.CRON_TZ}`);
   });
 
-  // TODO Slice 7: register cron here
-  // const stopCron = startDailyReminder();
+  const stopCron = startDailyReminder();
 
   const shutdown = async (signal) => {
     console.log(`\n${signal} received — shutting down`);
