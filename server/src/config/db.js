@@ -11,4 +11,4 @@ async function disconnectDB() {
   await mongoose.disconnect();
 }
 
-module.exports = { connectDB, disconnectDB };
+module.exports = { connectDB, disconnectDB};
