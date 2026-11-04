@@ -90,6 +90,7 @@ npm run dev
 ```
 
 ### Project Structure
+```
 
 plan-reminder-app/
 ├── client/                          # React frontend (Vite)
@@ -121,3 +122,4 @@ plan-reminder-app/
 
 cd server
 npm test
+```
