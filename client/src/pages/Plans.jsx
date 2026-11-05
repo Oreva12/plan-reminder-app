@@ -2,17 +2,26 @@ import { useState, useEffect } from 'react';
 import api from '../api/client';
 import PlanForm from './PlanForm';
 import PlanTable from '../components/PlanTable';
+import RenewPlanModal from '../components/RenewPlanModal';
 
 export default function Plans() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Renewal modal states
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [renewing, setRenewing] = useState(false);
+
+  // Sort plans by expiry date (soonest first)
+  const sortPlans = (plans) =>
+    [...plans].sort(
+      (a, b) => new Date(a.expiryDate) - new Date(b.expiryDate)
+    );
+
   const loadPlans = async () => {
     try {
       const res = await api.get('/plans');
-      // Sort by expiry date (soonest first)
-      const sorted = res.data.plans.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-      setPlans(sorted);
+      setPlans(sortPlans(res.data.plans));
     } catch (err) {
       console.error(err);
     } finally {
@@ -25,12 +34,12 @@ export default function Plans() {
   }, []);
 
   const handlePlanCreated = (newPlan) => {
-    // Add and re-sort
-    setPlans((prev) => [...prev, newPlan].sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate)));
+    setPlans((prev) => sortPlans([...prev, newPlan]));
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this plan?')) return;
+
     try {
       await api.delete(`/plans/${id}`);
       setPlans((prev) => prev.filter((p) => p._id !== id));
@@ -39,15 +48,36 @@ export default function Plans() {
     }
   };
 
-  const handleRenew = async (plan) => {
-    const newDate = window.prompt('Enter new expiry date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
-    if (!newDate) return;
+  // Open the renewal modal
+  const handleRenew = (plan) => {
+    setSelectedPlan(plan);
+  };
+
+  // Submit the renewal request
+  const submitRenewal = async (plan, expiryDate) => {
+    setRenewing(true);
+
     try {
-      const res = await api.post(`/plans/${plan._id}/renew`, { expiryDate: new Date(newDate).toISOString() });
-      // Update the plan in the list
-      setPlans((prev) => prev.map((p) => p._id === plan._id ? res.data.plan : p));
+      const res = await api.post(`/plans/${plan._id}/renew`, {
+        expiryDate: new Date(`${expiryDate}T00:00:00.000Z`).toISOString(),
+      });
+
+      // Update and re-sort plans
+      setPlans((prev) =>
+        sortPlans(
+          prev.map((p) =>
+            p._id === plan._id ? res.data.plan : p
+          )
+        )
+      );
+
+      setSelectedPlan(null);
     } catch (err) {
-      alert('Failed to renew plan');
+      throw new Error(
+        err.response?.data?.message || 'Failed to renew plan'
+      );
+    } finally {
+      setRenewing(false);
     }
   };
 
@@ -56,8 +86,24 @@ export default function Plans() {
   return (
     <div>
       <h2>Your Plans</h2>
+
       <PlanForm onPlanCreated={handlePlanCreated} />
-      <PlanTable plans={plans} onDelete={handleDelete} onRenew={handleRenew} />
+
+      <PlanTable
+        plans={plans}
+        onDelete={handleDelete}
+        onRenew={handleRenew}
+      />
+
+      {/* Renewal Modal */}
+      {selectedPlan && (
+        <RenewPlanModal
+          plan={selectedPlan}
+          onClose={() => setSelectedPlan(null)}
+          onRenew={submitRenewal}
+          loading={renewing}
+        />
+      )}
     </div>
   );
 }
